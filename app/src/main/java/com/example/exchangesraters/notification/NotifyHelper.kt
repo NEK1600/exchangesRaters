@@ -51,6 +51,7 @@ class NotifyHelper(context: Context, params: WorkerParameters):
                     var numberTwo = number?.toDouble()
                     Log.d("test2", "Число пользователя ${numberTwo}")
                     Log.d("test2", "Число сегодня2 ${doubleOne}")
+                    Log.d("test2", "время выполнения програмы ${Calendar.getInstance().time}")
                     if (numberTwo!!<doubleOne){
                         notifyFun()
                     }else{

@@ -1,12 +1,8 @@
 package com.example.exchangesraters
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,8 +14,6 @@ import com.example.exchangesraters.data.model.RatesModel
 import com.example.exchangesraters.data.model.RecordList
 import com.example.exchangesraters.data.remote.ApiClient
 import com.example.exchangesraters.databinding.ActivityMainBinding
-import com.example.exchangesraters.notification.Alarm
-import com.example.exchangesraters.notification.MyService
 import com.example.exchangesraters.notification.NotifyHelper
 import retrofit2.Call
 import retrofit2.Callback
@@ -95,35 +89,31 @@ class MainActivity : AppCompatActivity() {
     fun initNotify(){
         /*val uploadWorkRequest: WorkRequest =
            OneTimeWorkRequestBuilder<NotifyHelper>()
-               .setInitialDelay(15, TimeUnit.MINUTES)
+               .setInitialDelay(1, TimeUnit.MINUTES)
                .build()
         WorkManager
             .getInstance(this)
-            .enqueue(uploadWorkRequest)
+            .enqueue(uploadWorkRequest)*/
         val constraints = Constraints.Builder()
-            .setRequiresCharging(false)
-            .setRequiresBatteryNotLow(false)
-            .build()*/
+            //.setRequiresDeviceIdle(true )
+            .setRequiresBatteryNotLow(true)
+            .setRequiredNetworkType(NetworkType.UNMETERED)
+            .build()
 
-        /*val uploadWorkRequestTwo :PeriodicWorkRequest = PeriodicWorkRequest.Builder(
+        val uploadWorkRequestTwo :PeriodicWorkRequest = PeriodicWorkRequest.Builder(
             NotifyHelper::class.java,
             15,
             TimeUnit.MINUTES,
-        ).addTag("workTag").build()
+        ).setConstraints(constraints).build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "MyUniqueWorkName",
             ExistingPeriodicWorkPolicy.KEEP,
-            uploadWorkRequestTwo)*/
-        val myIntent = Intent(this@MainActivity, MyService::class.java)
-        var pendingIntent = PendingIntent.getService(this@MainActivity, 0, myIntent, 0)
-        val alarmManager: AlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val calendar: Calendar = Calendar.getInstance()
-        calendar.timeInMillis = System.currentTimeMillis()
-        calendar.add(Calendar.SECOND, 3)
-        alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            uploadWorkRequestTwo)
+
 
     }
+
 
     //возращает время на данный моменрт
     fun getDateTimeNow(): Date {
