@@ -19,8 +19,8 @@ class AdapterRates:RecyclerView.Adapter<AdapterRates.AdapterViewHolder>() {
     }
 
     override fun onBindViewHolder(holder: AdapterViewHolder, position: Int) {
-        holder.textView.text = listRatesModel.get(position).value
-        holder.textViewTimePerson.text = listRatesModel.get(position).date
+        holder.textView.text = listRatesModel[position].value
+        holder.textViewTimePerson.text = listRatesModel[position].date
     }
 
     override fun getItemCount(): Int {
@@ -35,11 +35,7 @@ class AdapterRates:RecyclerView.Adapter<AdapterRates.AdapterViewHolder>() {
 
     fun update(list:List<RecordList>){
         listRatesModel=list
-
         notifyDataSetChanged()
     }
 
 }
-
-
-

@@ -5,7 +5,7 @@ import org.simpleframework.xml.ElementList
 import org.simpleframework.xml.Root
 
 
-@Root(name = "ValCurs")
+@Root(name = "ValCurs",strict = false)
 data class RatesModel @JvmOverloads constructor(
     @field:Attribute(name = "ID")
     @param:Attribute(name = "ID")
@@ -27,8 +27,3 @@ data class RatesModel @JvmOverloads constructor(
     @param:ElementList(name = "Record",inline = true)
     var list: List<RecordList>,
 )
-
-
-
-
-

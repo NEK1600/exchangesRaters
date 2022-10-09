@@ -3,18 +3,22 @@ package com.example.exchangesraters
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.work.*
 import com.example.exchangesraters.adapters.AdapterRates
-import com.example.exchangesraters.constant.MyVariables
+import com.example.exchangesraters.constants.MyVariables
 import com.example.exchangesraters.data.model.RatesModel
-import com.example.exchangesraters.data.model.RecordList
 import com.example.exchangesraters.data.remote.ApiClient
 import com.example.exchangesraters.databinding.ActivityMainBinding
 import com.example.exchangesraters.notification.NotifyHelper
+import com.example.exchangesraters.viewModel.RepositoryRates
+import com.example.exchangesraters.viewModel.ViewModelFactory
+import com.example.exchangesraters.viewModel.ViewModelRates
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -27,13 +31,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     lateinit var rcViewRates: RecyclerView
     lateinit var adapter: AdapterRates
-    var listRates = mutableListOf<RecordList>()
+    //через нее добавляю число пользователя в таблицу
     var curs:String=""
+    //через нее получаю число пользователя
     var cursTwo:String=""
-    //здесь хранится заданое пользователем значение
-    //var cursThree:Double=0.00
     private lateinit var pref: SharedPreferences
-
+    private val retrofitService = ApiClient.create()
+    lateinit var viewModel: ViewModelRates
+    //Нужны для начальной точки календаря
     var day = 0
     var month = 0
     var year = 0
@@ -46,13 +51,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        viewModel = ViewModelProvider(this, ViewModelFactory(RepositoryRates(retrofitService)))
+            .get(ViewModelRates::class.java)
         initRecycler()
         initConnect()
         initPref()
         initNotify()
-
     }
 
+    //настраиваю recycler
     fun initRecycler(){
         rcViewRates = binding.rvRates
         adapter = AdapterRates()
@@ -63,54 +70,43 @@ class MainActivity : AppCompatActivity() {
         rcViewRates.layoutManager = linearLayoutManager
     }
 
+    //используя mvvm и coroutines делаю запрос на сервер
     fun initConnect(){
         MyVariables.dateFormatedOne = SimpleDateFormat("dd/MM/yyyy").format(getDateTimeNow())
         MyVariables.dateFormatedTwo = SimpleDateFormat("dd/MM/yyyy").format(getDateTimeOld())
-
-            val apiInterface = ApiClient.create().getRates(MyVariables.dateFormatedTwo,MyVariables.dateFormatedOne)
-            apiInterface.enqueue(object : Callback<RatesModel> {
-            override fun onResponse(call: Call<RatesModel>, response: Response<RatesModel>) {
-                listRates= response.body()?.list!!.toMutableList()
-                adapter.update(listRates)
-
-            }
-            override fun onFailure(call: Call<RatesModel>, t: Throwable) {
-                //Log.d("test", "OnFailure ${t.toString()}")
-            }
-
+        viewModel.mutableLiveData.observe(this, {it ->
+            adapter.update(it.list)
         })
+        viewModel.errorMessage.observe(this, {
+            Log.d("test2",it)
+        })
+        viewModel.getAllRates()
     }
 
+    //подключаю sharedPreferences
     fun initPref(){
         pref = getSharedPreferences("TABLE", Context.MODE_PRIVATE)
-
     }
 
+    //Подключаю workManager
     fun initNotify(){
-        /*val uploadWorkRequest: WorkRequest =
-           OneTimeWorkRequestBuilder<NotifyHelper>()
-               .setInitialDelay(1, TimeUnit.MINUTES)
-               .build()
-        WorkManager
-            .getInstance(this)
-            .enqueue(uploadWorkRequest)*/
+        //создаю ограничения без которых он не работает
         val constraints = Constraints.Builder()
             //.setRequiresDeviceIdle(true )
             .setRequiresBatteryNotLow(true)
             .setRequiredNetworkType(NetworkType.UNMETERED)
             .build()
-
+        //Каждый день запрашиваю доступ на сервер и вывожу уведомление по необходимости
         val uploadWorkRequestTwo :PeriodicWorkRequest = PeriodicWorkRequest.Builder(
             NotifyHelper::class.java,
-            15,
-            TimeUnit.MINUTES,
+            24,
+            TimeUnit.HOURS,
         ).setConstraints(constraints).build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "MyUniqueWorkName",
             ExistingPeriodicWorkPolicy.KEEP,
             uploadWorkRequestTwo)
-
 
     }
 
@@ -138,12 +134,11 @@ class MainActivity : AppCompatActivity() {
         cal.set(year, month, dayT, hour, minute)
         return cal.time
     }
-
+    //сохраняю число поьзователя в sharedPreferences
     fun onClickSave(view: View) {
         curs = binding.edText.text.toString()
         pref.edit().putString("courseString", curs).apply()
         cursTwo = pref.getString("courseString","0").toString()
-        MyVariables.cursThree=cursTwo.toDouble()
     }
 
 
